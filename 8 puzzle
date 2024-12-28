@@ -1,0 +1,84 @@
+import heapq
+def find_empty(board):
+    for i in range(3):
+        for j in range(3):
+            if board[i][j] == 0:
+                return i, j
+def manhattan(board, goal):
+    dist = 0
+    for i in range(3):
+        for j in range(3):
+            if board[i][j] != 0:
+                x, y = divmod(goal.index(board[i][j]), 3)
+                dist += abs(x - i) + abs(y - j)
+    return dist
+def generate_states(board, empty_pos):
+    x, y = empty_pos
+    moves = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+    new_states = []
+    
+    for move in moves:
+        nx, ny = x + move[0], y + move[1]
+        if 0 <= nx < 3 and 0 <= ny < 3:
+            new_board = [row[:] for row in board]  
+            new_board[x][y], new_board[nx][ny] = new_board[nx][ny], new_board[x][y]
+            new_states.append((new_board, (nx, ny)))
+    
+    return new_states
+def solve_puzzle(start, goal):
+    empty_pos = find_empty(start)
+    goal_flat = [num for row in goal for num in row]
+    heap = [(manhattan(start, goal_flat), start, empty_pos, 0, None)]
+    visited = set()  
+    parent_map = {}  
+    
+    while heap:
+        _, board, empty_pos, g_cost, parent = heapq.heappop(heap)
+        
+        if board == goal:
+           
+            path = []
+            while parent is not None:
+                path.append(board)
+                board = parent
+                parent = parent_map.get(tuple(map(tuple, board)))
+            path.append(start) 
+            path.reverse()  
+            return path  
+        
+        visited.add(tuple(map(tuple, board)))          
+        for new_board, new_empty_pos in generate_states(board, empty_pos):
+            if tuple(map(tuple, new_board)) not in visited:
+               
+                f_cost = g_cost + 1 + manhattan(new_board, goal_flat)
+                heapq.heappush(heap, (f_cost, new_board, new_empty_pos, g_cost + 1, board))
+                parent_map[tuple(map(tuple, new_board))] = board     
+    return None  
+
+def print_board(board):
+    for row in board:
+        print(row)
+    print()
+
+start = [
+    [1, 2, 3],
+    [0, 4, 5],
+    [7, 8, 6]
+]
+
+goal = [
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 0]
+]
+
+# Solve the puzzle
+path = solve_puzzle(start, goal)
+
+if path:
+    print("Solution found in", len(path) - 1, "moves.")
+    for i, board in enumerate(path):
+        print(f"Step {i}:")
+        print_board(board)
+else:
+    print("No solution found.")
